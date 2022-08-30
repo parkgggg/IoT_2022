@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ESP Datalogging Firebase App</title>
+
+    <!-- include Firebase S략DK -->
+    <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-app.js"></script>
+
+    <!-- include only the Firebase features as you need -->
+    <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-database.js"></script>
+
+    <script>
+      // Replace with your app config object
+      const firebaseConfig = {
+        apiKey: "AIzaSyCxyq45rLEH57zZCVGrSxqgalooHNE7r0Q",
+        authDomain: "esp-firebase-pratice-log.firebaseapp.com",
+        databaseURL: "https://esp-firebase-pratice-log-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "esp-firebase-pratice-log",
+        storageBucket: "esp-firebase-pratice-log.appspot.com",
+        messagingSenderId: "375194155624",
+        appId: "1:375194155624:web:1d12b56808e974bf5a19dd"
+      };
+
+      // Initialize firebase
+      firebase.initializeApp(firebaseConfig);
+
+      // Make auth and database references
+      const auth = firebase.auth();
+      const db = firebase.database();
+
+    </script>
+
+    <!-- include highchartsjs to build the charts-->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <!-- include to use jquery-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!--include icons from fontawesome-->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+    <!-- include Gauges Javascript library-->
+    <script src="https://cdn.rawgit.com/Mikhus/canvas-gauges/gh-pages/download/2.1.7/all/gauge.min.js"></script>
+    <!--reference for favicon-->
+    <link rel="icon" type="image/png" href="favicon.png">
+    <!--reference a stylesheet-->
+    <link rel="stylesheet" type="text/css" href="style.css">
+
+  </head>
+
+  <body>
+
+    <!--TOP BAR-->
+    <div class="topnav">
+      <h1>떨지말고 일어나<i class="fas fa-clipboard-list"></i></h1>
+    </div>
+
+    <!--AUTHENTICATION BAR (USER DETAILS/LOGOUT BUTTON)-->
+    <div id="authentication-bar" style="display: none;">
+      <p><span id="authentication-status">  접속 중  </span>
+        <span id="user-details"> ID </span>
+        <a href="/" id="logout-link"> 로그아웃 </a>
+      </p>
+    </div>
+
+    <!--LOGIN FORM-->
+    <form id="login-form" style="display: none;">
+      <div class="form-elements-container">
+        <label for="input-email"><b>아이디(이메일)</b></label>
+        <input type="text" placeholder="Enter Username" id="input-email" required>
+
+        <label for="input-password"><b>비밀번호</b></label>
+        <input type="password" placeholder="Enter Password" id="input-password" required>
+
+        <button type="submit" id="login-button"> 로그인 </button>
+        <p id="error-message" style="color:red;"></p>
+      </div>
+    </form>
+
+    <!--CONTENT (SENSOR READINGS)-->
+    <div class="content-sign-in" id="content-sign-in" style="display: none;">
+
+      <!--LAST UPDATE-->
+      <p><span class ="date-time">최근 갱신: <span id="lastUpdate"></span></span></p>
+      <p>
+        카드: <input type="checkbox" id="cards-checkbox" name="cards-checkbox" checked>
+        그래픽: <input type="checkbox" id="gauges-checkbox" name="gauges-checkbox" checked>
+        차트: <input type="checkbox" id="charts-checkbox" name="charts-checkbox" unchecked>
+      </p>
+      <div id="cards-div">
+        <div class="cards">
+          <!--Sitting Time-->
+          <div class="card">
+            <p>앉아있던 시간 (지난 30초)</p>
+            <p><span class="reading"><span id="sittingperhour"></span> (초) </span></p>
+          </div>
+          <!--Shaking Time-->
+          <div class="card">
+            <p> 다리 떤 횟수 (지난 30초)</p>
+            <p><span class="reading"><span id="shakingperhour"></span> (번) </span></p>
+          </div>
+        </div>
+      </div>
+      <!--GAUGES-->
+      <div id ="gauges-div">
+        <div class="cards">
+          <!--Sitting Time-->
+          <div class="card">
+            <canvas id="gauge-sitting"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!--CHARTS-->
+      <div id="charts-div" style="display:none">
+        <!--SET NUMBER OF READINGS INPUT FIELD-->
+        <div>
+          <p> 시각화할 데이터 개수: <input type="number" id="charts-range"></p>
+        </div>
+        <!--Sitting Time-CHART-->
+        <div class="cards">
+          <div class="card">
+            <p>앉아있던 시간 (30초 당)</p>
+            <div id="chart-sitting" class="chart-container"></div>
+          </div>
+        </div>
+        <!--Shaking Time-->
+        <div class="cards">
+          <div class="card">
+            <p>다리 떤 횟수 (30초 당)</p>
+            <div id="chart-shaking" class="chart-container"></div>
+          </div>
+        </div>
+      </div>
+
+    <!--BUTTONS TO HANDLE DATA-->
+    <p>
+      <!--View data button-->
+      <button id="view-data-button">데이터 테이블 보기</button>
+      <!--Hide data button-->
+      <button id="hide-data-button" style= "display:none;"> 숨기기 </button>
+      <!--Delete data button-->
+      <button id="delete-button" class="deletebtn">모든 데이터 삭제</button>
+    </p>
+    <!--Modal to delete data-->
+    <div id="delete-modal" class="modal" sytle="display:none">
+      <span onclick = "document.getElementById('delete-modal').style.display='none'" class="close" title="Close Modal">×</span>
+      <form id= "delete-data-form" class="modal-content" action="/">
+        <div class="container">
+          <h1>모든 데이터 삭제</h1>
+          <p>정말 삭제하시겠습니까?</p>
+          <div class="clearfix">
+            <button type="button" onclick="document.getElementById('delete-modal').style.display='none'" class="cancelbtn"> 취소 </button>
+            <button type="submit" onclick="document.getElementById('delete-modal').style.display='none'" class="deletebtn"> 삭제 </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!--TABLE WITH ALL DATA-->
+    <div class ="cards">
+      <div class="card" id="table-container" style= "display:none;">
+        <table id="readings-table">
+            <tr id="theader">
+              <th>날짜 / 시간</th>
+              <th>앉은 시간</th>
+              <th>다리 떤 횟수</th>
+            </tr>
+            <tbody id="tbody">
+            </tbody>
+        </table>
+        <p><button id="load-data" style= "display:none;">더 보기</button></p>
+      </div>
+    </div>
+
+  </div>
+
+    <!--INCLUDE JS FILES-->
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/charts-definition.js"></script>
+    <script src="scripts/gauges-definition.js"></script>
+    <script src="scripts/index.js"></script>
+
+  </body>
+
+</html>
